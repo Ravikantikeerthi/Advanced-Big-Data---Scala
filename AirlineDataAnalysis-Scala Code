@@ -1,0 +1,55 @@
+Keerthi Ravikanti - Assignment 1
+Problem Statement:
+
+ http://stat-computing.org/dataexpo/2009/ consists of flight arrival and departure details for all commercial flights within the USA, from October 1987 to April 2008. This is a large dataset: there are nearly 120 million records in total, and takes up 1.6 gigabytes of space compressed and 12 gigabytes when uncompressed. 
+You may download the data of only 1 year for analysis. For Ex 2007 data is available at: http://stat-computing.org/dataexpo/2009/2007.csv.bz2 
+Find the average delay for each day of the week. i.e what is the average delay on Monday, Tuesday….
+1. Assumptions considered for this assignment:
+1) Arrival Delay: Given that business is highly focussed to meet the passenger expectations by ensuring the passenger is arrived at destination ON TIME. For understanding  of "Flight delay", I have considered only the factor of Arrival Delay as it do matter for passengers.
+2) Cancelled & Diverted flights are not considered for arriving the flight delay numbers because we don't have any data for analytical purpose with respect to Flight Arrival Delays
+
+Solution - Scala Code:
+
+//Step 1:  Start all the hadoop processes by following commands
+$start-dfs.sh
+$start-yarn.sh
+Enter into Spark environment
+$spark-shell
+//Loading the CSV file into spark with the help of a scala varibale SC
+val aircraft = sc.textFile("file:///home/hduser/Datasets/flights2007.csv")
+ 
+
+//Step 2: Removing the header column and splitting the lines to fields delimited by comma
+val records = aircraft.filter(line=> !line.contains("Year")).map(line => line.split(",").map(elem => elem.trim))
+println(records.take(10).deep)
+ 
+
+//Step 3: Filtering out the cancelled flights containing values as 1
+val filterArrDelay1 = records.filter(rec => (rec(21) != 1))
+ 
+
+//Step 4: Filtering out the diverted flights containing values as 1
+val filterArrDelay2 = filterArrDelay1.filter(rec => (rec(23) != 1))
+ 
+
+//Step 5: Removed the flights containing "NA" values  under ArrDelay column 
+val filterArrDelay3 = filterArrDelay2.filter(rec => (rec(14) !="NA" ))
+//Step 6: As per the requirement grouping the arrival delay values for each DayOfWeek
+val AircraftArrDelayMap = filterArrDelay3.map(rec=> (rec(3),rec(14).toInt))
+ 
+
+
+
+//Step 7: Calculating the average of arrival delay at each DayOfWeek
+val AvgArrDelay = AircraftArrDelayMap.mapValues(x => (x, 1)).reduceByKey((x, y) => (x._1 + y._1, x._2 + y._2)).mapValues(y => 1.0 * y._1 / y._2).collect
+ 
+3. Analyzing the output
+Flights on Day of the week (5) which is Friday has the highest delay with 13.06 minutes where as Day of the week (6) which is Saturday has lowest Delay with 5.84 minutes. 
+
+
+
+
+
+
+
+
